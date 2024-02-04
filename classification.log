@@ -1,0 +1,20 @@
+Downloading: "https://download.pytorch.org/models/resnet50-0676ba61.pth" to /home/rivachen/.cache/torch/hub/checkpoints/resnet50-0676ba61.pth
+  0%|          | 0.00/97.8M [00:00<?, ?B/s] 10%|█         | 10.2M/97.8M [00:00<00:00, 107MB/s] 22%|██▏       | 21.4M/97.8M [00:00<00:00, 113MB/s] 33%|███▎      | 32.6M/97.8M [00:00<00:00, 115MB/s] 45%|████▍     | 43.8M/97.8M [00:00<00:00, 116MB/s] 56%|█████▋    | 55.1M/97.8M [00:00<00:00, 117MB/s] 68%|██████▊   | 66.3M/97.8M [00:00<00:00, 117MB/s] 79%|███████▉  | 77.5M/97.8M [00:00<00:00, 117MB/s] 91%|█████████ | 88.7M/97.8M [00:00<00:00, 117MB/s]100%|██████████| 97.8M/97.8M [00:00<00:00, 116MB/s]
+Downloading: "https://download.pytorch.org/models/resnet50-11ad3fa6.pth" to /home/rivachen/.cache/torch/hub/checkpoints/resnet50-11ad3fa6.pth
+######################################
+Load pretrained model:
+  0%|          | 0.00/97.8M [00:00<?, ?B/s]  1%|          | 544k/97.8M [00:00<00:18, 5.53MB/s]  7%|▋         | 6.66M/97.8M [00:00<00:02, 40.0MB/s] 18%|█▊        | 17.9M/97.8M [00:00<00:01, 75.3MB/s] 30%|██▉       | 29.1M/97.8M [00:00<00:00, 92.0MB/s] 41%|████      | 40.3M/97.8M [00:00<00:00, 101MB/s]  53%|█████▎    | 51.5M/97.8M [00:00<00:00, 107MB/s] 64%|██████▍   | 62.7M/97.8M [00:00<00:00, 110MB/s] 76%|███████▌  | 73.9M/97.8M [00:00<00:00, 113MB/s] 87%|████████▋ | 85.1M/97.8M [00:00<00:00, 114MB/s] 99%|█████████▊| 96.3M/97.8M [00:01<00:00, 115MB/s]100%|██████████| 97.8M/97.8M [00:01<00:00, 101MB/s]
+######################################
+Start tuning:
+Traceback (most recent call last):
+  File "/home/rivachen/GP-ImageNet/classification.py", line 146, in <module>
+    main()
+  File "/home/rivachen/GP-ImageNet/classification.py", line 67, in main
+    loss = criterion(logits, labels)
+  File "/home/rivachen/.local/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/rivachen/.local/lib/python3.9/site-packages/torch/nn/modules/loss.py", line 1164, in forward
+    return F.cross_entropy(input, target, weight=self.weight,
+  File "/home/rivachen/.local/lib/python3.9/site-packages/torch/nn/functional.py", line 3014, in cross_entropy
+    return torch._C._nn.cross_entropy_loss(input, target, weight, _Reduction.get_enum(reduction), ignore_index, label_smoothing)
+IndexError: Target 36 is out of bounds.
