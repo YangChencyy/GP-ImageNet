@@ -1,1 +1,5 @@
 data/*
+resnet50_imagenet.pth
+*.pth
+*.csv
+*.png
