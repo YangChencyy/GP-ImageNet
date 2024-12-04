@@ -6,3 +6,7 @@ resnet50_imagenet.pth
 .DS_Store
 *.log
 __pycache__/*
+
+/Datasets
+
+*.pyc
