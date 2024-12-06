@@ -71,8 +71,9 @@ def main():
     ckpt_dir = os.path.join('ckpt', f'cifar10-{n_features}')
     os.makedirs(ckpt_dir, exist_ok=True)
 
-    train = True
-    if train:
+    TRAIN = False
+    EVALUATE_TRAIN = False
+    if TRAIN:
         num_epochs = 100  # Define the number of epochs
         # Train the model
         print('######################################')
@@ -130,68 +131,69 @@ def main():
 
 ##################################  Train   ############################################################
 
-    # test_loader = DataLoader(test_set, batch_size=256, shuffle=False, num_workers=4)
-    # Assuming the continuation from the previous script
-    print('######################################')
-    print('Re-saving training data:')
-    # Set the model to evaluation mode
-    model.eval()
+    if EVALUATE_TRAIN:
+        # test_loader = DataLoader(test_set, batch_size=256, shuffle=False, num_workers=4)
+        # Assuming the continuation from the previous script
+        print('######################################')
+        print('Re-saving training data:')
+        # Set the model to evaluation mode
+        model.eval()
 
-    train_features = []  # List to store features
-    train_logits = []  # List to store logits (for softmax scores)
-    train_labels = []  # List to store labels
+        train_features = []  # List to store features
+        train_logits = []  # List to store logits (for softmax scores)
+        train_labels = []  # List to store labels
 
-    # No need to track gradients here
-    with torch.no_grad():
-        for inputs, labels in tqdm(train_loader):
-            inputs, labels = inputs.to(device), labels.to(device)
-            inputs = inputs.view(-1, 3, 32, 32)
-            features, logits = model(inputs)
+        # No need to track gradients here
+        with torch.no_grad():
+            for inputs, labels in tqdm(train_loader):
+                inputs, labels = inputs.to(device), labels.to(device)
+                inputs = inputs.view(-1, 3, 32, 32)
+                features, logits = model(inputs)
 
-            train_features.append(features.cpu().numpy())  # Store features
-            train_logits.append(logits.cpu().numpy())  # Convert logits to softmax scores and store
-            train_labels.append(labels.cpu().numpy())  # Store labels
+                train_features.append(features.cpu().numpy())  # Store features
+                train_logits.append(logits.cpu().numpy())  # Convert logits to softmax scores and store
+                train_labels.append(labels.cpu().numpy())  # Store labels
 
-    
-    # Concatenate all features, logits (softmax scores), and labels
-    train_features_array = np.concatenate(train_features, axis=0)
-    train_logits_array = np.concatenate(train_logits, axis=0)
-    train_labels_array = np.concatenate(train_labels, axis=0)
-    train_labels_array = train_labels_array.reshape(-1, 1)
-    
-    # Optionally, calculate and print test accuracy
-    correct_predictions = np.sum(np.argmax(train_logits_array, axis=1) == train_labels_array.squeeze())
-    A = np.argmax(train_logits_array, axis=1)
-    # print(A.shape, correct_predictions)
-    # print(test_labels_array.shape, test_logits_array.shape, test_labels_array.shape[0])
-    total_samples = train_labels_array.shape[0]
-    train_accuracy = correct_predictions / total_samples
-    print(f'Train Accuracy: {train_accuracy:.4f}')
+        
+        # Concatenate all features, logits (softmax scores), and labels
+        train_features_array = np.concatenate(train_features, axis=0)
+        train_logits_array = np.concatenate(train_logits, axis=0)
+        train_labels_array = np.concatenate(train_labels, axis=0)
+        train_labels_array = train_labels_array.reshape(-1, 1)
+        
+        # Optionally, calculate and print test accuracy
+        correct_predictions = np.sum(np.argmax(train_logits_array, axis=1) == train_labels_array.squeeze())
+        A = np.argmax(train_logits_array, axis=1)
+        # print(A.shape, correct_predictions)
+        # print(test_labels_array.shape, test_logits_array.shape, test_labels_array.shape[0])
+        total_samples = train_labels_array.shape[0]
+        train_accuracy = correct_predictions / total_samples
+        print(f'Train Accuracy: {train_accuracy:.4f}')
 
-    n_train = 50000
-    train_features_array = train_features_array[:n_train, :]
-    train_logits_array = train_logits_array[:n_train, :]
-    train_labels_array = train_labels_array[:n_train]
+        n_train = 50000
+        train_features_array = train_features_array[:n_train, :]
+        train_logits_array = train_logits_array[:n_train, :]
+        train_labels_array = train_labels_array[:n_train]
 
-    # Generate column names
-    feature_names = [f'feature_{i+1}' for i in range(n_features)]
-    logit_names = [f'logit_{i+1}' for i in range(10)]
-    label_name = ['label']
-    column_names = feature_names + logit_names + label_name
+        # Generate column names
+        feature_names = [f'feature_{i+1}' for i in range(n_features)]
+        logit_names = [f'logit_{i+1}' for i in range(10)]
+        label_name = ['label']
+        column_names = feature_names + logit_names + label_name
 
-    # Create a header string with column names
-    header_string = ','.join(column_names)
-    # Combine features, logits (softmax scores), and labels for CSV saving
-    combined_train_array = np.hstack((train_features_array, train_logits_array, train_labels_array.reshape(-1, 1)))
+        # Create a header string with column names
+        header_string = ','.join(column_names)
+        # Combine features, logits (softmax scores), and labels for CSV saving
+        combined_train_array = np.hstack((train_features_array, train_logits_array, train_labels_array.reshape(-1, 1)))
 
-    # Save to CSV file
-    print('######################################')
-    print('Saving train features, logits (softmax scores), and labels to CSV:')
-    save_path = os.path.join(ckpt_dir, "train_features_logits_labels.csv")
-    np.savetxt(save_path, combined_train_array, delimiter=",", fmt='%f', header=header_string, comments='')
+        # Save to CSV file
+        print('######################################')
+        print('Saving train features, logits (softmax scores), and labels to CSV:')
+        save_path = os.path.join(ckpt_dir, "train_features_logits_labels.csv")
+        np.savetxt(save_path, combined_train_array, delimiter=",", fmt='%f', header=header_string, comments='')
 
 
-##################################  Test   ############################################################
+    ##################################  Test   ############################################################
 
     test_loader = DataLoader(test_set, batch_size=256, shuffle=False, num_workers=4)
     # Assuming the continuation from the previous script
@@ -462,7 +464,12 @@ def main():
     #         file.write(",".join(str_row) + "\n")
 
 
-    dset = 'SVHN'
+    # dset = 'DTD'
+    # dset = 'LSUN-C'
+    # dset = 'LSUN-R'
+    # dset = 'iSUN'
+    dset = 'Places365'
+    # dset = 'SVHN'
     # dset='CIFAR10'
     # dset = 'FashionMNIST'
     # dset = 'ImageNet-c'
@@ -497,7 +504,62 @@ def main():
         
         test_datasets = datasets.ImageFolder(os.path.join('data/Imagenet'), transform=transform) 
         loader = torch.utils.data.DataLoader(test_datasets, batch_size=512, shuffle=True)
-    
+    elif dset == 'DTD':
+        print('######################################')
+        print('Testing on DTD Texture')
+        data = torchvision.datasets.ImageFolder(root="data/dtd/images/",
+                                    transform=transforms.Compose([transforms.Resize((32, 32)), transforms.CenterCrop(32), 
+                                                                  transforms.ToTensor(), 
+                                                                  transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),]))
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+     
+    elif dset == 'LSUN-C':
+        print('######################################')
+        print('Testing on LSUN-C')
+        mean = [x / 255 for x in [125.3, 123.0, 113.9]]
+        std = [x / 255 for x in [63.0, 62.1, 66.7]]
+        data = torchvision.datasets.ImageFolder(root="data/LSUN/",
+                                    transform=transforms.Compose([transforms.Resize((32, 32)), 
+                                                                  transforms.CenterCrop(32), 
+                                                                  transforms.ToTensor(),
+                                                                  transforms.Normalize(mean, std)]))
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+
+    elif dset == 'LSUN-R':
+        print('######################################')
+        print('Testing on LSUN-R')
+        mean = [x / 255 for x in [125.3, 123.0, 113.9]]
+        std = [x / 255 for x in [63.0, 62.1, 66.7]]
+        data = torchvision.datasets.ImageFolder(root="data/LSUN_resize/",
+                                    transform=transforms.Compose([transforms.Resize((32, 32)), 
+                                                                  transforms.CenterCrop(32), 
+                                                                  transforms.ToTensor(),
+                                                                  transforms.Normalize(mean, std)]))
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+
+    elif dset == 'iSUN':
+        print('######################################')
+        print('Testing on iSUN')
+        mean = [x / 255 for x in [125.3, 123.0, 113.9]]
+        std = [x / 255 for x in [63.0, 62.1, 66.7]]
+        data = torchvision.datasets.ImageFolder(root="data/iSUN/",
+                                    transform=transforms.Compose([transforms.Resize((32, 32)), 
+                                                                  transforms.CenterCrop(32), 
+                                                                  transforms.ToTensor(),
+                                                                  transforms.Normalize(mean, std)]))
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+
+    elif dset == 'Places365':
+        print('######################################')
+        print('Testing on Places365')
+        mean = [x / 255 for x in [125.3, 123.0, 113.9]]
+        std = [x / 255 for x in [63.0, 62.1, 66.7]]
+        data = datasets.Places365(root="data/", split='val', small=True, download=True, 
+                                  transform=transforms.Compose([transforms.Resize((32, 32)), 
+                                                                  transforms.CenterCrop(32), 
+                                                                  transforms.ToTensor(),
+                                                                  transforms.Normalize(mean, std)]))
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
     # Evaluate features
     model.eval()
     ood_features = []  # List to store features
@@ -507,8 +569,8 @@ def main():
     with torch.no_grad():
         batch_counter = 0
         for inputs, labels in tqdm(loader):
-            if batch_counter >= 100:  # Check if 200 batches have been processed
-                break 
+            # if batch_counter >= 100:  # Check if 200 batches have been processed
+            #     break 
             inputs, labels = inputs.to(device), labels.to(device)
             inputs = inputs.view(-1, 3, 32, 32)
             features, logits = model(inputs)
@@ -520,8 +582,10 @@ def main():
 
     
     # Concatenate all features, logits (softmax scores), and labels
-    # n_test = 5000
-    ood_features_array = np.concatenate(ood_features, axis=0)[:n_test, :]
+    n_test = 5000
+    ood_features_array = np.concatenate(ood_features, axis=0)
+    print(ood_features_array.shape)
+    ood_features_array = ood_features_array[:n_test, :]
     ood_logits_array = np.concatenate(ood_logits, axis=0)[:n_test, :]
     ood_labels_array = np.full((n_test, 1), 10)
 

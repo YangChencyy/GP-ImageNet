@@ -161,6 +161,7 @@ class DTDDataLoader:
 
 
         # Create and return a DataLoader
+        print(len(combined_dataset))
         return DataLoader(combined_dataset, batch_size=self.batch_size, shuffle=shuffle, num_workers=num_workers)
 
 class SVHNDataLoader:
