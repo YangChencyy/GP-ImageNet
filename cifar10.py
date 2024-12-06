@@ -30,13 +30,19 @@ def main():
     print(device)
 
 
-##################################  Train   ###########################################################
+#############################s#####  Train   ###########################################################
 
-    transform = transforms.Compose([ transforms.Resize((32, 32)), 
-                                    transforms.Grayscale(num_output_channels=3),
-                                    transforms.ToTensor()])
-    train_set = torchvision.datasets.MNIST("./Datasets", download=True, transform=transform)
-    test_set = torchvision.datasets.MNIST("./Datasets", download=True, train=False, transform=transform)
+    mean = [x / 255 for x in [125.3, 123.0, 113.9]]
+    std = [x / 255 for x in [63.0, 62.1, 66.7]]
+    train_transform = transforms.Compose([transforms.RandomHorizontalFlip(), transforms.RandomCrop(32, padding=4),
+                                   transforms.ToTensor(), transforms.Normalize(mean, std)])
+    test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean, std)])
+    train_set = torchvision.datasets.CIFAR10('./Datasets/CIFAR-10',
+                              train=True, transform=train_transform, download=True)
+    test_set = torchvision.datasets.CIFAR10('./Datasets/CIFAR-10',
+                             train=False, transform=test_transform, download=True)
+    num_classes = 10
+    num_channels = 3
 
     total_size = len(train_set)
     train_ratio = 0.8
@@ -49,26 +55,25 @@ def main():
     # Perform the split
     train_dataset, validation_dataset = random_split(train_set, [train_size, val_size])
 
-    train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=4)
     validation_loader = DataLoader(validation_dataset, batch_size=256, shuffle=False, num_workers=4)
 
     n_channels = 3
-    n_features=32
+    n_features=64
     model = DenseNet3(100, 10, 3, feature_size=n_features).to(device)
 
     # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-    # lr_scheduler = ExponentialLR(optimizer, gamma=0.85) 
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=4, verbose=True) 
 
+    lr=0.1
+    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001, nesterov=True)
 
-    ckpt_dir = os.path.join('ckpt', f'mnist-{n_features}')
+    ckpt_dir = os.path.join('ckpt', f'cifar10-{n_features}')
     os.makedirs(ckpt_dir, exist_ok=True)
 
-    train = False
+    train = True
     if train:
-        num_epochs = 50  # Define the number of epochs
+        num_epochs = 100  # Define the number of epochs
         # Train the model
         print('######################################')
         print('Start training:')
@@ -99,18 +104,26 @@ def main():
             validation_loss /= len(validation_loader)
             
 
-            scheduler.step(validation_loss)
+            # scheduler.step(validation_loss)
 
             print(f'Epoch {epoch+1}, Training Losss: {train_loss}, Validation Loss: {validation_loss}')
+
+            # Update learning rate
+            if epoch == 49:
+                optimizer.param_groups[0]['lr'] *= lr * 0.1
+            # elif epoch == 74:
+            #     optimizer.param_groups[0]['lr'] *= lr * 0.01
+            elif epoch == 89:
+                optimizer.param_groups[0]['lr'] *= lr * 0.01
 
         # Save the trained model
         print('######################################')
         print('Store trained model:')
-        torch.save(model.state_dict(), os.path.join(ckpt_dir, 'desnet_mnist.pth'))
+        torch.save(model.state_dict(), os.path.join(ckpt_dir, 'desnet_cifar10.pth'))
     else:
         print('######################################')
         print('Load model:')
-        model_state_path = os.path.join(ckpt_dir, 'desnet_mnist.pth')
+        model_state_path = os.path.join(ckpt_dir, 'desnet_cifar10.pth')
         model_state = torch.load(model_state_path, map_location=device)
         model.load_state_dict(model_state)
         print('Model loaded successfully')

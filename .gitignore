@@ -8,5 +8,6 @@ resnet50_imagenet.pth
 __pycache__/*
 
 /Datasets
+/Dataset
 
 *.pyc
