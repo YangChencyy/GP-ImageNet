@@ -4,8 +4,13 @@ import torch
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 import os
 import random
+import torchvision
 from torchvision import transforms
 import torchvision.datasets as datasets
+
+from typing import Any, Callable, cast, Dict, List, Optional, Tuple
+from torchvision.datasets import DatasetFolder
+from torchvision.datasets.folder import default_loader, IMG_EXTENSIONS
 
 np.random.seed(42)
 
@@ -186,3 +191,84 @@ class SVHNDataLoader:
 
         data_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=shuffle, num_workers=num_workers)
         return data_loader
+
+
+class ImageSubfolder(DatasetFolder):
+    """Extend ImageFolder to support fold subsets
+    This class inherits from :class:`~torchvision.datasets.DatasetFolder` so
+    the same methods can be overridden to customize the dataset.
+    Args:
+        root (string): Root directory path.
+        transform (callable, optional): A function/transform that  takes in an PIL image
+            and returns a transformed version. E.g, ``transforms.RandomCrop``
+        target_transform (callable, optional): A function/transform that takes in the
+            target and transforms it.
+        loader (callable, optional): A function to load an image given its path.
+        is_valid_file (callable, optional): A function that takes path of an Image file
+            and check if the file is a valid file (used to check of corrupt files)
+        class_to_idx (dict): Dict with items (class_name, class_index).
+     Attributes:
+        classes (list): List of the class names sorted alphabetically.
+        class_to_idx (dict): Dict with items (class_name, class_index).
+        imgs (list): List of (image path, class_index) tuples
+    """
+
+    def __init__(
+        self,
+        root: str,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+        loader: Callable[[str], Any] = default_loader,
+        is_valid_file: Optional[Callable[[str], bool]] = None,
+        class_to_idx: Optional[Dict] = None,
+    ):
+        super(DatasetFolder, self).__init__(root, transform=transform, target_transform=target_transform)
+        if class_to_idx is not None:
+            classes = class_to_idx.keys()
+        else:
+            classes, class_to_idx = self.find_classes(self.root)
+        extensions = IMG_EXTENSIONS if is_valid_file is None else None,
+        samples = self.make_dataset(self.root, class_to_idx, extensions[0], is_valid_file)
+
+        self.loader = loader
+        self.extensions = extensions
+
+        self.classes = classes
+        self.class_to_idx = class_to_idx
+        self.samples = samples
+        self.targets = [s[1] for s in samples]
+        self.imgs = self.samples
+
+def imagenet100_set_loader(bsz):
+    train_transform = transforms.Compose([
+        transforms.Resize(size=224, interpolation=transforms.InterpolationMode.BICUBIC),
+        # trn.RandomResizedCrop(size=(224, 224), scale=(0.5, 1), interpolation=trn.InterpolationMode.BICUBIC),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
+    ])
+    test_transform = transforms.Compose([
+        transforms.Resize(size=(224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
+        transforms.CenterCrop(size=(224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
+    ])
+    root_dir = 'data/'
+    train_dir = root_dir + 'val'
+    classes, _ = torchvision.datasets.folder.find_classes(train_dir)
+    index = [125, 788, 630, 535, 474, 694, 146, 914, 447, 208, 182, 621, 271, 646, 328, 119, 772, 928, 610, 891, 340,
+             890, 589, 524, 172, 453, 869, 556, 168, 982, 942, 874, 787, 320, 457, 127, 814, 358, 604, 634, 898, 388,
+             618, 306, 150, 508, 702, 323, 822, 63, 445, 927, 266, 298, 255, 44, 207, 151, 666, 868, 992, 843, 436, 131,
+             384, 908, 278, 169, 294, 428, 60, 472, 778, 304, 76, 289, 199, 152, 584, 510, 825, 236, 395, 762, 917, 573,
+             949, 696, 977, 401, 583, 10, 562, 738, 416, 637, 973, 359, 52, 708]
+
+    classes = [classes[i] for i in index]
+    class_to_idx = {c: i for i, c in enumerate(classes)}
+    train_data = ImageSubfolder(root_dir + 'train', transform=train_transform, class_to_idx=class_to_idx)
+    test_data = ImageSubfolder(root_dir + 'val', transform=test_transform, class_to_idx=class_to_idx)
+    return train_data, test_data
+    # labeled_trainloader = torch.utils.data.DataLoader(train_data, batch_size=bsz, shuffle=True, num_workers=16,
+    #                                                   pin_memory=True, drop_last=True)
+    # testloader = torch.utils.data.DataLoader(test_data, batch_size=bsz, shuffle=True, num_workers=16, pin_memory=True)
+    
+    # return labeled_trainloader, testloader
