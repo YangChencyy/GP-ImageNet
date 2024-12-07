@@ -11,6 +11,9 @@ import torchvision.datasets as datasets
 from typing import Any, Callable, cast, Dict, List, Optional, Tuple
 from torchvision.datasets import DatasetFolder
 from torchvision.datasets.folder import default_loader, IMG_EXTENSIONS
+import shutil
+from tqdm import tqdm
+import argparse
 
 np.random.seed(42)
 
@@ -239,6 +242,7 @@ class ImageSubfolder(DatasetFolder):
         self.targets = [s[1] for s in samples]
         self.imgs = self.samples
 
+
 def imagenet100_set_loader(bsz):
     train_transform = transforms.Compose([
         transforms.Resize(size=(224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
@@ -263,6 +267,7 @@ def imagenet100_set_loader(bsz):
              949, 696, 977, 401, 583, 10, 562, 738, 416, 637, 973, 359, 52, 708]
 
     classes = [classes[i] for i in index]
+    print(classes)
     class_to_idx = {c: i for i, c in enumerate(classes)}
     train_data = ImageSubfolder(root_dir + 'train', transform=train_transform, class_to_idx=class_to_idx)
     test_data = ImageSubfolder(root_dir + 'val', transform=test_transform, class_to_idx=class_to_idx)
@@ -272,3 +277,47 @@ def imagenet100_set_loader(bsz):
     # testloader = torch.utils.data.DataLoader(test_data, batch_size=bsz, shuffle=True, num_workers=16, pin_memory=True)
     
     # return labeled_trainloader, testloader
+
+def imagenet10_set_loader(bsz):
+    train_transform = transforms.Compose([
+        transforms.Resize(size=(224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
+        # trn.RandomResizedCrop(size=(224, 224), scale=(0.5, 1), interpolation=trn.InterpolationMode.BICUBIC),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
+    ])
+    test_transform = transforms.Compose([
+        transforms.Resize(size=(224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
+        transforms.CenterCrop(size=(224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
+    ])
+    root_dir = 'data/'
+    train_dir = root_dir + 'val'
+    classes, _ = torchvision.datasets.folder.find_classes(train_dir)
+    index = [895, 817, 10, 284, 352, 238, 30, 569, 339, 510]
+
+    classes = [classes[i] for i in index]
+    print(classes)
+    class_to_idx = {c: i for i, c in enumerate(classes)}
+    train_data = ImageSubfolder(root_dir + 'train', transform=train_transform, class_to_idx=class_to_idx)
+    test_data = ImageSubfolder(root_dir + 'val', transform=test_transform, class_to_idx=class_to_idx)
+    return train_data, test_data
+
+# DEPRECATED!
+def create_imagenet_subset():
+    src_dir = os.path.join('data')
+    dst_path = os.path.join('data', "ImageNet10")
+    os.makedirs(dst_path, exist_ok=True)
+
+    cls_list = ["n04552348", "n04285008", "n01530575", "n02123597", "n02422699", 
+                "n02107574", "n01641577", "n03417042", "n02389026", "n03095699"]
+
+    for split in ['train', 'val']:
+        for c in tqdm(cls_list):
+            shutil.copytree(os.path.join(src_dir, split, c), os.path.join(dst_path, split, c), dirs_exist_ok=True)
+
+if __name__ == '__main__':
+    pass
+    # create_imagenet_subset()
+    imagenet10_set_loader(512)
