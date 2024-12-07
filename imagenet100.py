@@ -16,6 +16,7 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 
 from models.densenet import *
+from models.resnet import *
 from dataset import *
 import torchvision
 from tqdm import tqdm
@@ -52,12 +53,12 @@ def main():
     train_dataset, validation_dataset = random_split(train_set, [train_size, val_size])
     print("Dataset size: ", len(train_dataset), len(validation_dataset), len(test_set))
 
-    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=4)
-    validation_loader = DataLoader(validation_dataset, batch_size=256, shuffle=False, num_workers=4)
-    exit()
+    train_loader = DataLoader(train_dataset, batch_size=bsz, shuffle=True, num_workers=1)
+    validation_loader = DataLoader(validation_dataset, batch_size=bsz, shuffle=False, num_workers=1)
 
-    n_features=64
-    model = DenseNet3(100, 10, 3, feature_size=n_features).to(device)
+    n_features=128
+    # Model: Resnet100
+    model = resnet101(num_class=num_classes, feature_size=n_features).to(device)
 
     # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
@@ -65,10 +66,10 @@ def main():
     lr=0.1
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001, nesterov=True)
 
-    ckpt_dir = os.path.join('ckpt', f'cifar10-{n_features}')
+    ckpt_dir = os.path.join('ckpt', f'imagenet100-{n_features}')
     os.makedirs(ckpt_dir, exist_ok=True)
 
-    TRAIN = False
+    TRAIN = True
     EVALUATE_TRAIN = False
     if TRAIN:
         num_epochs = 100  # Define the number of epochs
@@ -81,8 +82,7 @@ def main():
             
             for inputs, labels in train_loader:
                 inputs, labels = inputs.to(device), labels.to(device)
-                # inputs = inputs.view(-1, 3, 32, 32)
-                inputs = inputs.view(-1, 3, 32, 32)
+                # print(inputs.shape)
                 optimizer.zero_grad()
                 features, logits = model(inputs)
                 loss = criterion(logits, labels)
@@ -95,7 +95,7 @@ def main():
             with torch.no_grad():
                 for inputs, labels in validation_loader:
                     inputs, labels = inputs.to(device), labels.to(device)
-                    inputs = inputs.view(-1, 3, 32, 32)
+                    # inputs = inputs.view(-1, 3, 32, 32)
                     features, logits = model(inputs)
                     loss = criterion(logits, labels)
                     validation_loss += loss.item()
@@ -109,19 +109,19 @@ def main():
             # Update learning rate
             if epoch == 49:
                 optimizer.param_groups[0]['lr'] *= lr * 0.1
-            # elif epoch == 74:
-            #     optimizer.param_groups[0]['lr'] *= lr * 0.01
-            elif epoch == 89:
+            elif epoch == 74:
                 optimizer.param_groups[0]['lr'] *= lr * 0.01
+            elif epoch == 89:
+                optimizer.param_groups[0]['lr'] *= lr * 0.001
 
         # Save the trained model
         print('######################################')
         print('Store trained model:')
-        torch.save(model.state_dict(), os.path.join(ckpt_dir, 'desnet_cifar10.pth'))
+        torch.save(model.state_dict(), os.path.join(ckpt_dir, 'resnet_imagenet100.pth'))
     else:
         print('######################################')
         print('Load model:')
-        model_state_path = os.path.join(ckpt_dir, 'desnet_cifar10.pth')
+        model_state_path = os.path.join(ckpt_dir, 'resnet_imagenet100.pth')
         model_state = torch.load(model_state_path, map_location=device)
         model.load_state_dict(model_state)
         print('Model loaded successfully')
@@ -144,7 +144,7 @@ def main():
         with torch.no_grad():
             for inputs, labels in tqdm(train_loader):
                 inputs, labels = inputs.to(device), labels.to(device)
-                inputs = inputs.view(-1, 3, 32, 32)
+                # inputs = inputs.view(-1, 3, 32, 32)
                 features, logits = model(inputs)
 
                 train_features.append(features.cpu().numpy())  # Store features
@@ -192,7 +192,7 @@ def main():
 
     ##################################  Test   ############################################################
 
-    test_loader = DataLoader(test_set, batch_size=256, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_set, batch_size=bsz, shuffle=False, num_workers=4)
     # Assuming the continuation from the previous script
     print('######################################')
     print('Start testing:')
@@ -207,7 +207,7 @@ def main():
     with torch.no_grad():
         for inputs, labels in tqdm(test_loader):
             inputs, labels = inputs.to(device), labels.to(device)
-            inputs = inputs.view(-1, 3, 32, 32)
+            # inputs = inputs.view(-1, 3, 32, 32)
             features, logits = model(inputs)
 
             test_features.append(features.cpu().numpy())  # Store features
@@ -465,11 +465,12 @@ def main():
     # dset = 'LSUN-C'
     # dset = 'LSUN-R'
     # dset = 'iSUN'
-    dset = 'Places365'
+    # dset = 'Places365'
     # dset = 'SVHN'
     # dset='CIFAR10'
     # dset = 'FashionMNIST'
     # dset = 'ImageNet-c'
+    dset=None
 
     if dset == 'SVHN':
         print('######################################')
@@ -557,6 +558,9 @@ def main():
                                                                   transforms.ToTensor(),
                                                                   transforms.Normalize(mean, std)]))
         loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+    
+    else:
+        exit()
     # Evaluate features
     model.eval()
     ood_features = []  # List to store features

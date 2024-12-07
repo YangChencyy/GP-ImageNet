@@ -45,6 +45,7 @@ class resnet101(nn.Module):
         x = self.model.layer3(x)
         x = self.model.layer4(x)
         x = self.model.avgpool(x)
+        x = x.view(batch, -1)
 
         x = self.fc1(x)
         features = self.fc2(x)

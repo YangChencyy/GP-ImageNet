@@ -241,7 +241,7 @@ class ImageSubfolder(DatasetFolder):
 
 def imagenet100_set_loader(bsz):
     train_transform = transforms.Compose([
-        transforms.Resize(size=224, interpolation=transforms.InterpolationMode.BICUBIC),
+        transforms.Resize(size=(224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
         # trn.RandomResizedCrop(size=(224, 224), scale=(0.5, 1), interpolation=trn.InterpolationMode.BICUBIC),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.ToTensor(),
