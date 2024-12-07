@@ -1,6 +1,7 @@
 import torch
 from torchvision import models
 from torch import nn
+import torch.nn.functional as F
 
 class CustomResNet(nn.Module):
     def __init__(self, pretrained_model, num_classes=10, feature_size=32):
@@ -48,17 +49,16 @@ class resnet101(nn.Module):
         x = x.view(batch, -1)
 
         x = self.fc1(x)
-        features = self.fc2(x)
+        features = self.fc2(F.relu(x))
         logits = self.classifier(features)
         return features, logits
 
-class resnet50(nn.Module):
+class resnet18(nn.Module):
     def __init__(self, num_class=100, feature_size=64):
-        super(resnet50, self).__init__()
-        self.model = models.resnet50(pretrained=False)
+        super(resnet18, self).__init__()
+        self.model = models.resnet18(pretrained=False)
         self.model.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = nn.Linear(2048, 512) # 2048
-        self.fc2 = nn.Linear(512, feature_size)
+        self.fc1 = nn.Linear(512, feature_size)
         self.classifier = nn.Linear(feature_size, num_class)
 
 
@@ -74,16 +74,16 @@ class resnet50(nn.Module):
         x = self.model.layer3(x)
         x = self.model.layer4(x)
         x = self.model.avgpool(x)
-
-        x = self.fc1(x)
-        features = self.fc2(x)
+        x = x.view(batch, -1)
+        # print(x.shape)
+        features = self.fc1(F.relu(x))
         logits = self.classifier(features)
         return features, logits
 
 if __name__ == '__main__':
     print("Test")
     # Test resnet 101
-    model = resnet50(10, 64)
+    model = resnet18(10, 64)
     # model = resnet101(10, 64)
     eg = torch.ones((100, 3, 32, 32))
     features, logits = model(eg)

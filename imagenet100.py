@@ -34,10 +34,9 @@ def main():
 #############################s#####  Train   ###########################################################
 
     print("Training on ImageNet100 Dataset")
-    bsz=64
+    bsz=512
     train_set, test_set = imagenet100_set_loader(bsz)
     num_classes = 100
-    num_channels = 3
 
     total_size = len(train_set)
     train_ratio = 0.8
@@ -57,8 +56,9 @@ def main():
     validation_loader = DataLoader(validation_dataset, batch_size=bsz, shuffle=False, num_workers=1)
 
     n_features=128
-    # Model: Resnet100
-    model = resnet101(num_class=num_classes, feature_size=n_features).to(device)
+    # Model: Resnet101
+    # model = resnet101(num_class=num_classes, feature_size=n_features).to(device)
+    model = resnet18(num_class=num_classes, feature_size=n_features).to(device)
 
     # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
@@ -72,7 +72,7 @@ def main():
     TRAIN = True
     EVALUATE_TRAIN = False
     if TRAIN:
-        num_epochs = 100  # Define the number of epochs
+        num_epochs = 10  # Define the number of epochs
         # Train the model
         print('######################################')
         print('Start training:')
@@ -573,7 +573,7 @@ def main():
             # if batch_counter >= 100:  # Check if 200 batches have been processed
             #     break 
             inputs, labels = inputs.to(device), labels.to(device)
-            inputs = inputs.view(-1, 3, 32, 32)
+            # inputs = inputs.view(-1, 3, 32, 32)
             features, logits = model(inputs)
 
             ood_features.append(features.cpu().numpy())  # Store features
