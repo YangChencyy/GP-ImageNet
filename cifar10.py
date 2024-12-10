@@ -71,7 +71,7 @@ def main():
     ckpt_dir = os.path.join('ckpt', f'cifar10-{n_features}')
     os.makedirs(ckpt_dir, exist_ok=True)
 
-    TRAIN = False
+    TRAIN = True
     EVALUATE_TRAIN = False
     if TRAIN:
         num_epochs = 100  # Define the number of epochs
@@ -82,7 +82,7 @@ def main():
         for epoch in tqdm(range(num_epochs)):
             model.train()
             
-            for inputs, labels in train_loader:
+            for inputs, labels in tqdm(train_loader):
                 inputs, labels = inputs.to(device), labels.to(device)
                 # inputs = inputs.view(-1, 3, 32, 32)
                 inputs = inputs.view(-1, 3, 32, 32)

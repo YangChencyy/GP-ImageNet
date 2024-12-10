@@ -267,7 +267,7 @@ def imagenet100_set_loader(bsz):
              949, 696, 977, 401, 583, 10, 562, 738, 416, 637, 973, 359, 52, 708]
 
     classes = [classes[i] for i in index]
-    print(classes)
+    # print(classes)
     class_to_idx = {c: i for i, c in enumerate(classes)}
     train_data = ImageSubfolder(root_dir + 'train', transform=train_transform, class_to_idx=class_to_idx)
     test_data = ImageSubfolder(root_dir + 'val', transform=test_transform, class_to_idx=class_to_idx)
@@ -278,17 +278,18 @@ def imagenet100_set_loader(bsz):
     
     # return labeled_trainloader, testloader
 
-def imagenet10_set_loader(bsz):
+def imagenet10_set_loader(bsz, small=True):
+    n = 32 if small else 224
     train_transform = transforms.Compose([
-        transforms.Resize(size=(224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
+        transforms.Resize(size=(n, n), interpolation=transforms.InterpolationMode.BICUBIC),
         # trn.RandomResizedCrop(size=(224, 224), scale=(0.5, 1), interpolation=trn.InterpolationMode.BICUBIC),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
     ])
     test_transform = transforms.Compose([
-        transforms.Resize(size=(224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
-        transforms.CenterCrop(size=(224, 224)),
+        transforms.Resize(size=(n, n), interpolation=transforms.InterpolationMode.BICUBIC),
+        transforms.CenterCrop(size=(n, n)),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
     ])
@@ -298,7 +299,7 @@ def imagenet10_set_loader(bsz):
     index = [895, 817, 10, 284, 352, 238, 30, 569, 339, 510]
 
     classes = [classes[i] for i in index]
-    print(classes)
+    # print(classes)
     class_to_idx = {c: i for i, c in enumerate(classes)}
     train_data = ImageSubfolder(root_dir + 'train', transform=train_transform, class_to_idx=class_to_idx)
     test_data = ImageSubfolder(root_dir + 'val', transform=test_transform, class_to_idx=class_to_idx)

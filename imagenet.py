@@ -20,23 +20,39 @@ from models.resnet import *
 from dataset import *
 import torchvision
 from tqdm import tqdm
+import argparse
 
 
 torch.manual_seed(42)
 np.random.seed(42)
 
 def main():
+    parser = argparse.ArgumentParser(description="details")
+    parser.add_argument('--num_classes', type=int, required=False, default=100, help='Number of classes')
+    parser.add_argument('--bsz', type=int, required=False, default=64, help='batch size')
+    parser.add_argument('--n_features', type=int, required=False, default=128, help='Number of features')
+    parser.add_argument('--lr', type=float, required=False, default=0.1, help='Learning rate')
+    parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
+    parser.add_argument('--train', action='store_true', help='train models')
+    parser.add_argument('--eval_train', action='store_true', help='eval train sets')
+    args = parser.parse_args()
+
     # Set device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
 
 
 #############################s#####  Train   ###########################################################
+    num_classes = args.num_classes
+    bsz=args.bsz
+    n_features=args.n_features
+    if num_classes == 100:
+        print("Training on ImageNet100 Dataset")
+        train_set, test_set = imagenet100_set_loader(bsz)
+    else:
+        print("Training on ImageNet10 Dataset")
+        train_set, test_set = imagenet10_set_loader(bsz)
 
-    print("Training on ImageNet100 Dataset")
-    bsz=512
-    train_set, test_set = imagenet100_set_loader(bsz)
-    num_classes = 100
 
     total_size = len(train_set)
     train_ratio = 0.8
@@ -45,42 +61,46 @@ def main():
 
     # Calculate sizes for each split
     train_size = int(total_size * train_ratio)
-    val_size = int(total_size * val_ratio) + 1 # This is specifically for imagenet100
-    # print(train_size + val_size)
+    val_size = int(total_size * val_ratio)
+    if num_classes == 100:
+        val_size = val_size + 1 # This is specifically for imagenet100
 
     # Perform the split
     train_dataset, validation_dataset = random_split(train_set, [train_size, val_size])
     print("Dataset size: ", len(train_dataset), len(validation_dataset), len(test_set))
 
-    train_loader = DataLoader(train_dataset, batch_size=bsz, shuffle=True, num_workers=1)
-    validation_loader = DataLoader(validation_dataset, batch_size=bsz, shuffle=False, num_workers=1)
+    train_loader = DataLoader(train_dataset, batch_size=bsz, shuffle=True, num_workers=16)
+    validation_loader = DataLoader(validation_dataset, batch_size=bsz, shuffle=False, num_workers=16)
 
-    n_features=128
-    # Model: Resnet101
-    # model = resnet101(num_class=num_classes, feature_size=n_features).to(device)
-    model = resnet18(num_class=num_classes, feature_size=n_features).to(device)
-
+    if num_classes == 100:
+        # Model: Resnet101
+        model = resnet101(num_class=num_classes, feature_size=n_features).to(device)
+        # model = resnet18(num_class=num_classes, feature_size=n_features).to(device)
+    else:
+        # Model: Densenet
+        model = DenseNet3(100, num_classes=num_classes, num_channels=3, feature_size=n_features).to(device)
+        # model = resnet18(num_class=num_classes, feature_size=n_features).to(device)
     # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
-
-    lr=0.1
+    lr=args.lr
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001, nesterov=True)
 
-    ckpt_dir = os.path.join('ckpt', f'imagenet100-{n_features}')
+    # Checkpointing
+    ckpt_dir = os.path.join('ckpt', f'imagenet{num_classes}-{n_features}')
     os.makedirs(ckpt_dir, exist_ok=True)
 
-    TRAIN = True
-    EVALUATE_TRAIN = False
+    TRAIN = args.train
+    EVALUATE_TRAIN = args.eval_train
     if TRAIN:
-        num_epochs = 10  # Define the number of epochs
+        num_epochs = 100  # Define the number of epochs
         # Train the model
         print('######################################')
         print('Start training:')
         
         for epoch in tqdm(range(num_epochs)):
             model.train()
-            
-            for inputs, labels in train_loader:
+            # for inputs, labels in train_loader:
+            for inputs, labels in tqdm(train_loader, disable=(not args.verbose)): # add tqdm for runtime diagnosis
                 inputs, labels = inputs.to(device), labels.to(device)
                 # print(inputs.shape)
                 optimizer.zero_grad()
@@ -117,11 +137,17 @@ def main():
         # Save the trained model
         print('######################################')
         print('Store trained model:')
-        torch.save(model.state_dict(), os.path.join(ckpt_dir, 'resnet_imagenet100.pth'))
+        if num_classes == 100:
+            torch.save(model.state_dict(), os.path.join(ckpt_dir, 'resnet_imagenet100.pth'))
+        else:
+            torch.save(model.state_dict(), os.path.join(ckpt_dir, 'densenet_imagenet10.pth'))
     else:
         print('######################################')
         print('Load model:')
-        model_state_path = os.path.join(ckpt_dir, 'resnet_imagenet100.pth')
+        if num_classes == 100:
+            model_state_path = os.path.join(ckpt_dir, 'resnet_imagenet100.pth')
+        else:
+            model_state_path = os.path.join(ckpt_dir, 'densenet_imagenet10.pth')
         model_state = torch.load(model_state_path, map_location=device)
         model.load_state_dict(model_state)
         print('Model loaded successfully')
@@ -252,215 +278,8 @@ def main():
     save_path = os.path.join(ckpt_dir, "test_features_logits_labels.csv")
     np.savetxt(save_path, combined_test_array, delimiter=",", fmt='%f', header=header_string, comments='')
 
-
 ##################################  OOD Datasets   ############################################################
-
-# INaturalist
-    # print('######################################')
-    # print('Testing on INaturalist')
-    # inaturalist_loader = INaturalistDataLoader(root_dir='./inaturalist/data', batch_size=32, download=True).get_data_loader()
-    # model.eval()
-    # ood_features = []  # List to store features
-    # ood_logits = []  # List to store logits (for softmax scores)
-    # ood_labels = []  # List to store labels
-    # print('Start testing')
-    # with torch.no_grad():
-    #     batch_counter = 0
-    #     for inputs, labels in inaturalist_loader:
-    #         if batch_counter >= 300:  # Check if 200 batches have been processed
-    #             break 
-    #         inputs, labels = inputs.to(device), labels.to(device)
-    #         inputs = inputs.view(-1, 3, 32, 32)
-    #         features, logits = model(inputs)
-
-    #         ood_features.append(features.cpu().numpy())  # Store features
-    #         ood_logits.append(logits.cpu().numpy())  # Convert logits to softmax scores and store
-    #         # ood_labels.append(labels.cpu().numpy())  # Store labels
-    #         batch_counter += 1
-
-    
-    # # Concatenate all features, logits (softmax scores), and labels
-    # ood_features_array = np.concatenate(ood_features, axis=0)[:2000, :]
-    # ood_logits_array = np.concatenate(ood_logits, axis=0)[:2000, :]
-    # ood_labels_array = np.full((2000, 1), 10)
-
-    # combined_features = np.concatenate([test_features_array, ood_features_array], axis=0)
-    # combined_logits = np.concatenate([test_logit_array, ood_logits_array], axis=0)
-    # combined_labels = np.concatenate([test_labels_array, ood_labels_array], axis=0)
-
-    # tsne = TSNE(n_components=2, random_state=42)
-    # tsne_results = tsne.fit_transform(combined_features) 
-    # combined_array = np.hstack((combined_features, combined_logits, combined_labels))
-
-    # print('Getting tSNE features')
-    # # Plotting
-    # plt.figure(figsize=(10, 8))
-    # scatter = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=combined_labels_for_plot[:, 0], cmap='viridis', alpha=0.6)
-    # plt.colorbar(scatter, label='Labels')
-    # plt.title('t-SNE of Combined Test and OOD Data')
-    # plt.xlabel('tSNE1')
-    # plt.ylabel('tSNE2')
-
-    # plt.savefig("INaturalist.png")
-
-    
-
-
-    # print('######################################')
-    # print('Saving data for INaturalist to CSV:')
-
-    # column_names = [f"feature_{i+1}" for i in range(32)] + [f"logit_{i+1}" for i in range(10)] + ["label"]
-    # df = pd.DataFrame(combined_array, columns=column_names)
-    # df['tSNE'] = tsne_results[:, 0]
-    # df['tSNE'] = tsne_results[:, 1]
-    # df['class'] = ['test']*2000 + ['OOD']*2000
-
-    # df.to_csv("INaturalist_test.csv", index=False)
-    
-## SUN
-
-
-    # print('######################################')
-    # print('Testing on SUN')
-    # sun397_loader = SUN397DataLoader(root_dir='./data/sun397', batch_size=32, download=False).get_data_loader()
-    # model.eval()
-    # ood_features = []  # List to store features
-    # ood_logits = []  # List to store logits (for softmax scores)
-    # ood_labels = []  # List to store labels
-    # print('Start testing')
-    # with torch.no_grad():
-    #     batch_counter = 0
-    #     for inputs, labels in sun397_loader:
-    #         if batch_counter >= 100:  # Check if 200 batches have been processed
-    #             break 
-    #         inputs, labels = inputs.to(device), labels.to(device)
-    #         inputs = inputs.view(-1, 3, 32, 32)
-    #         features, logits = model(inputs)
-
-    #         ood_features.append(features.cpu().numpy())  # Store features
-    #         ood_logits.append(logits.cpu().numpy())  # Convert logits to softmax scores and store
-    #         # ood_labels.append(labels.cpu().numpy())  # Store labels
-    #         batch_counter += 1
-
-    
-    # # Concatenate all features, logits (softmax scores), and labels
-    # ood_features_array = np.concatenate(ood_features, axis=0)[:2000, :]
-    # ood_logits_array = np.concatenate(ood_logits, axis=0)[:2000, :]
-    # ood_labels_array = np.full((2000, 1), 10)
-
-    # combined_features = np.concatenate([test_features_array, ood_features_array], axis=0)
-    # print(test_logits_array.shape, ood_logits_array.shape)
-    # combined_logits = np.concatenate([test_logits_array, ood_logits_array], axis=0)
-    # print(test_labels_array.shape, ood_labels_array.shape)
-    # combined_labels = np.concatenate([test_labels_array, ood_labels_array], axis=0)
-    # print(combined_features.shape, combined_logits.shape, combined_labels.shape)
-    # combined_array = np.hstack((combined_features, combined_logits, combined_labels))
-
-    # tsne = TSNE(n_components=2, random_state=42)
-    # tsne_results = tsne.fit_transform(combined_features) 
-
-    # print('Getting tSNE features')
-    # # Plotting
-    # plt.figure(figsize=(10, 8))
-    # scatter = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=combined_labels[:, 0], cmap='viridis', alpha=0.6)
-    # plt.colorbar(scatter, label='Labels')
-    # plt.title('t-SNE of Combined Test and OOD Data')
-    # plt.xlabel('tSNE1')
-    # plt.ylabel('tSNE2')
-
-    # plt.savefig("SUN.png")
-
-
-    # print('######################################')
-    # print('Saving data for SUN to CSV:')
-
-    # column_names = [f"feature_{i+1}" for i in range(32)] + [f"logit_{i+1}" for i in range(10)] + ["label", "tSNE1", "tSNE2", "class"]
-    # class_labels = ['test'] * 2000 + ['OOD'] * 2000  # Adjust the numbers as needed
-
-    # combined_data_with_tsne = np.hstack((combined_array, tsne_results, np.array(class_labels).reshape(-1, 1)))
-
-    # with open("SUN_test.csv", "w") as file:
-    #     file.write(",".join(column_names) + "\n")
-        
-    #     for row in combined_data_with_tsne:
-    #         str_row = [str(item) for item in row]  # Convert all elements to strings
-    #         file.write(",".join(str_row) + "\n")
-
-## Places
-
-    # places365_loader = Places365DataLoader(root_dir='./data/places365', batch_size=32, download=True).get_data_loader()
-
-
-
-## DTD
-
-    # print('######################################')
-    # print('Testing on DTD')
-    # dtd_loader = DTDDataLoader(root_dir='./data/dtd', batch_size=32, download=False).get_data_loader()
-    # model.eval()
-    # ood_features = []  # List to store features
-    # ood_logits = []  # List to store logits (for softmax scores)
-    # ood_labels = []  # List to store labels
-    # print('Start testing')
-    # with torch.no_grad():
-    #     batch_counter = 0
-    #     for inputs, labels in dtd_loader:
-    #         if batch_counter >= 100:  # Check if 200 batches have been processed
-    #             break 
-    #         inputs, labels = inputs.to(device), labels.to(device)
-    #         inputs = inputs.view(-1, 3, 32, 32)
-    #         features, logits = model(inputs)
-
-    #         ood_features.append(features.cpu().numpy())  # Store features
-    #         ood_logits.append(logits.cpu().numpy())  # Convert logits to softmax scores and store
-    #         # ood_labels.append(labels.cpu().numpy())  # Store labels
-    #         batch_counter += 1
-
-    
-    # # Concatenate all features, logits (softmax scores), and labels
-    # ood_features_array = np.concatenate(ood_features, axis=0)[:2000, :]
-    # ood_logits_array = np.concatenate(ood_logits, axis=0)[:2000, :]
-    # ood_labels_array = np.full((2000, 1), 10)
-
-    # combined_features = np.concatenate([test_features_array, ood_features_array], axis=0)
-    # # print(test_logits_array.shape, ood_logits_array.shape)
-    # combined_logits = np.concatenate([test_logits_array, ood_logits_array], axis=0)
-    # # print(test_labels_array.shape, ood_labels_array.shape)
-    # combined_labels = np.concatenate([test_labels_array, ood_labels_array], axis=0)
-    # # print(combined_features.shape, combined_logits.shape, combined_labels.shape)
-    # combined_array = np.hstack((combined_features, combined_logits, combined_labels))
-
-    # tsne = TSNE(n_components=2, random_state=42)
-    # tsne_results = tsne.fit_transform(combined_features) 
-
-    # print('Getting tSNE features')
-    # # Plotting
-    # plt.figure(figsize=(10, 8))
-    # scatter = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=combined_labels[:, 0], cmap='viridis', alpha=0.6)
-    # plt.colorbar(scatter, label='Labels')
-    # plt.title('t-SNE of Combined Test and OOD Data')
-    # plt.xlabel('tSNE1')
-    # plt.ylabel('tSNE2')
-
-    # plt.savefig("DTD.png")
-
-
-    # print('######################################')
-    # print('Saving data for DTD to CSV:')
-
-    # column_names = [f"feature_{i+1}" for i in range(32)] + [f"logit_{i+1}" for i in range(10)] + ["label", "tSNE1", "tSNE2", "class"]
-    # class_labels = ['test'] * 2000 + ['OOD'] * 2000  # Adjust the numbers as needed
-
-    # combined_data_with_tsne = np.hstack((combined_array, tsne_results, np.array(class_labels).reshape(-1, 1)))
-
-    # with open("DTD_test.csv", "w") as file:
-    #     file.write(",".join(column_names) + "\n")
-        
-    #     for row in combined_data_with_tsne:
-    #         str_row = [str(item) for item in row]  # Convert all elements to strings
-    #         file.write(",".join(str_row) + "\n")
-
-
+    # dset = 'iNaturalist'
     # dset = 'DTD'
     # dset = 'LSUN-C'
     # dset = 'LSUN-R'
@@ -558,6 +377,17 @@ def main():
                                                                   transforms.ToTensor(),
                                                                   transforms.Normalize(mean, std)]))
         loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+
+    elif dset == 'iNaturalist':
+        print('######################################')
+        print('Testing on iNaturalist')
+        data = torchvision.datasets.ImageFolder(root="data/iNaturalist/",
+                                  transform=transforms.Compose([transforms.Resize((224, 224)), 
+                                                                  transforms.CenterCrop(224), 
+                                                                  transforms.ToTensor(),
+                                                                  transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                                                                       std=[0.229, 0.224, 0.225])]))
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=64)
     
     else:
         exit()
