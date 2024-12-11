@@ -10,6 +10,7 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
 #SBATCH --time=48:00:00
-#SBATCH --output=/scratch/sunwbgt_root/sunwbgt98/xysong/GP-ImageNet/jobs/im10.log
+#SBATCH --output=/scratch/sunwbgt_root/sunwbgt98/xysong/GP-ImageNet/jobs/im10-test.log
 
-python imagenet.py --lr=0.01 --num_classes=10 --bsz=256 --n_features=64 --train --eval_train
+# python imagenet.py --lr=0.5 --num_classes=10 --bsz=256 --n_features=64 --train --eval_train
+python imagenet.py --lr=0.5 --num_classes=10 --bsz=256 --n_features=64

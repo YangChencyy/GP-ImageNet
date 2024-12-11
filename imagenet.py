@@ -200,7 +200,7 @@ def main():
 
         # Generate column names
         feature_names = [f'feature_{i+1}' for i in range(n_features)]
-        logit_names = [f'logit_{i+1}' for i in range(10)]
+        logit_names = [f'logit_{i+1}' for i in range(num_classes)]
         label_name = ['label']
         column_names = feature_names + logit_names + label_name
 
@@ -218,7 +218,7 @@ def main():
 
     ##################################  Test   ############################################################
 
-    test_loader = DataLoader(test_set, batch_size=bsz, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_set, batch_size=bsz, shuffle=False, num_workers=16)
     # Assuming the continuation from the previous script
     print('######################################')
     print('Start testing:')
@@ -256,14 +256,14 @@ def main():
     test_accuracy = correct_predictions / total_samples
     print(f'Test Accuracy: {test_accuracy:.4f}')
 
-    n_test = 5000
+    n_test = min(5000, len(test_set))
     test_features_array = test_features_array[:n_test, :]
     test_logits_array = test_logits_array[:n_test, :]
     test_labels_array = test_labels_array[:n_test]
 
     # Generate column names
     feature_names = [f'feature_{i+1}' for i in range(n_features)]
-    logit_names = [f'logit_{i+1}' for i in range(10)]
+    logit_names = [f'logit_{i+1}' for i in range(num_classes)]
     label_name = ['label']
     column_names = feature_names + logit_names + label_name
 
@@ -285,6 +285,7 @@ def main():
     # dset = 'LSUN-R'
     # dset = 'iSUN'
     # dset = 'Places365'
+    # dset = 'Places365-Large'
     # dset = 'SVHN'
     # dset='CIFAR10'
     # dset = 'FashionMNIST'
@@ -387,7 +388,18 @@ def main():
                                                                   transforms.ToTensor(),
                                                                   transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                                                                                        std=[0.229, 0.224, 0.225])]))
-        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=64)
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=64, num_workers=16)
+
+    elif dset == 'Places365-Large':
+        print('######################################')
+        print('Testing on Places365-Large')
+        data = torchvision.datasets.ImageFolder(root="data/Places/",
+                                  transform=transforms.Compose([transforms.Resize((224, 224)), 
+                                                                  transforms.CenterCrop(224), 
+                                                                  transforms.ToTensor(),
+                                                                  transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                                                                       std=[0.229, 0.224, 0.225])]))
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=64, num_workers=16)
     
     else:
         exit()
@@ -413,7 +425,7 @@ def main():
 
     
     # Concatenate all features, logits (softmax scores), and labels
-    n_test = 5000
+    n_test = min(5000, len(test_set))
     ood_features_array = np.concatenate(ood_features, axis=0)
     print(ood_features_array.shape)
     ood_features_array = ood_features_array[:n_test, :]
@@ -443,7 +455,7 @@ def main():
     print('######################################')
     print(f'Saving data for {dset} to CSV:')
 
-    column_names = [f"feature_{i+1}" for i in range(n_features)] + [f"logit_{i+1}" for i in range(10)] + ["label", "tSNE1", "tSNE2", "class"]
+    column_names = [f"feature_{i+1}" for i in range(n_features)] + [f"logit_{i+1}" for i in range(num_classes)] + ["label", "tSNE1", "tSNE2", "class"]
     class_labels = ['test'] * n_test + ['OOD'] * n_test  # Adjust the numbers as needed
 
     combined_data_with_tsne = np.hstack((combined_array, tsne_results, np.array(class_labels).reshape(-1, 1)))

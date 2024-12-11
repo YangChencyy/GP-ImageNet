@@ -57,14 +57,14 @@ def main():
 
     train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=4)
     validation_loader = DataLoader(validation_dataset, batch_size=256, shuffle=False, num_workers=4)
-    
+
     n_features=128
     model = DenseNet3(100, num_classes=num_classes, num_channels=num_channels, feature_size=n_features).to(device)
 
     # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
 
-    lr=0.1
+    lr=0.5
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001, nesterov=True)
 
     ckpt_dir = os.path.join('ckpt', f'cifar100-{n_features}')
@@ -73,7 +73,7 @@ def main():
     TRAIN = True
     EVALUATE_TRAIN = True
     if TRAIN:
-        num_epochs = 100  # Define the number of epochs
+        num_epochs = 200  # Define the number of epochs
         # Train the model
         print('######################################')
         print('Start training:')
@@ -81,7 +81,7 @@ def main():
         for epoch in tqdm(range(num_epochs)):
             model.train()
             
-            for inputs, labels in tqdm(train_loader):
+            for inputs, labels in train_loader:
                 inputs, labels = inputs.to(device), labels.to(device)
                 # inputs = inputs.view(-1, 3, 32, 32)
                 inputs = inputs.view(-1, 3, 32, 32)
@@ -111,10 +111,10 @@ def main():
             # Update learning rate
             if epoch == 49:
                 optimizer.param_groups[0]['lr'] *= lr * 0.1
-            elif epoch == 74:
-                optimizer.param_groups[0]['lr'] *= lr * 0.01
+            # elif epoch == 74:
+            #     optimizer.param_groups[0]['lr'] *= lr * 0.01
             elif epoch == 89:
-                optimizer.param_groups[0]['lr'] *= lr * 0.001
+                optimizer.param_groups[0]['lr'] *= lr * 0.01
 
         # Save the trained model
         print('######################################')
@@ -257,12 +257,12 @@ def main():
 
 ##################################  OOD Datasets   ############################################################
 
-    dset = 'DTD'
+    # dset = 'DTD'
     # dset = 'LSUN-C'
     # dset = 'LSUN-R'
     # dset = 'iSUN'
     # dset = 'Places365'
-    # dset = 'SVHN'
+    dset = 'SVHN'
     # dset='CIFAR10'
     # dset = 'FashionMNIST'
     # dset = 'ImageNet-c'
