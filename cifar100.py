@@ -70,8 +70,8 @@ def main():
     ckpt_dir = os.path.join('ckpt', f'cifar100-{n_features}')
     os.makedirs(ckpt_dir, exist_ok=True)
 
-    TRAIN = True
-    EVALUATE_TRAIN = True
+    TRAIN = False
+    EVALUATE_TRAIN = False
     if TRAIN:
         num_epochs = 200  # Define the number of epochs
         # Train the model
@@ -176,7 +176,7 @@ def main():
 
         # Generate column names
         feature_names = [f'feature_{i+1}' for i in range(n_features)]
-        logit_names = [f'logit_{i+1}' for i in range(10)]
+        logit_names = [f'logit_{i+1}' for i in range(num_classes)]
         label_name = ['label']
         column_names = feature_names + logit_names + label_name
 
@@ -239,7 +239,7 @@ def main():
 
     # Generate column names
     feature_names = [f'feature_{i+1}' for i in range(n_features)]
-    logit_names = [f'logit_{i+1}' for i in range(10)]
+    logit_names = [f'logit_{i+1}' for i in range(num_classes)]
     label_name = ['label']
     column_names = feature_names + logit_names + label_name
 
@@ -261,8 +261,8 @@ def main():
     # dset = 'LSUN-C'
     # dset = 'LSUN-R'
     # dset = 'iSUN'
-    # dset = 'Places365'
-    dset = 'SVHN'
+    dset = 'Places365'
+    # dset = 'SVHN'
     # dset='CIFAR10'
     # dset = 'FashionMNIST'
     # dset = 'ImageNet-c'
@@ -347,12 +347,12 @@ def main():
         print('Testing on Places365')
         mean = [x / 255 for x in [125.3, 123.0, 113.9]]
         std = [x / 255 for x in [63.0, 62.1, 66.7]]
-        data = datasets.Places365(root="data/", split='val', small=True, download=True, 
+        data = datasets.Places365(root="data/", split='val', small=True, download=False, 
                                   transform=transforms.Compose([transforms.Resize((32, 32)), 
                                                                   transforms.CenterCrop(32), 
                                                                   transforms.ToTensor(),
                                                                   transforms.Normalize(mean, std)]))
-        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512, num_workers=16)
     # Evaluate features
     model.eval()
     ood_features = []  # List to store features
@@ -405,7 +405,7 @@ def main():
     print('######################################')
     print(f'Saving data for {dset} to CSV:')
 
-    column_names = [f"feature_{i+1}" for i in range(n_features)] + [f"logit_{i+1}" for i in range(10)] + ["label", "tSNE1", "tSNE2", "class"]
+    column_names = [f"feature_{i+1}" for i in range(n_features)] + [f"logit_{i+1}" for i in range(num_classes)] + ["label", "tSNE1", "tSNE2", "class"]
     class_labels = ['test'] * n_test + ['OOD'] * n_test  # Adjust the numbers as needed
 
     combined_data_with_tsne = np.hstack((combined_array, tsne_results, np.array(class_labels).reshape(-1, 1)))

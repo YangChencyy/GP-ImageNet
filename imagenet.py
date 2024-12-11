@@ -32,9 +32,11 @@ def main():
     parser.add_argument('--bsz', type=int, required=False, default=64, help='batch size')
     parser.add_argument('--n_features', type=int, required=False, default=128, help='Number of features')
     parser.add_argument('--lr', type=float, required=False, default=0.1, help='Learning rate')
+    parser.add_argument('--ood', type=str, required=False, default=None, help='OOD')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
     parser.add_argument('--train', action='store_true', help='train models')
     parser.add_argument('--eval_train', action='store_true', help='eval train sets')
+    parser.add_argument('--tag', type=str, required=False, default=None, help='tag')
     args = parser.parse_args()
 
     # Set device
@@ -86,7 +88,7 @@ def main():
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001, nesterov=True)
 
     # Checkpointing
-    ckpt_dir = os.path.join('ckpt', f'imagenet{num_classes}-{n_features}')
+    ckpt_dir = os.path.join('ckpt', f'imagenet{num_classes}-{n_features}-{args.tag}')
     os.makedirs(ckpt_dir, exist_ok=True)
 
     TRAIN = args.train
@@ -280,7 +282,9 @@ def main():
 
 ##################################  OOD Datasets   ############################################################
     # dset = 'iNaturalist'
+    # dset = 'SUN'
     # dset = 'DTD'
+    # dset = 'DTD-Large'
     # dset = 'LSUN-C'
     # dset = 'LSUN-R'
     # dset = 'iSUN'
@@ -290,7 +294,9 @@ def main():
     # dset='CIFAR10'
     # dset = 'FashionMNIST'
     # dset = 'ImageNet-c'
-    dset=None
+    # dset=None
+
+    dset = args.ood
 
     if dset == 'SVHN':
         print('######################################')
@@ -330,6 +336,15 @@ def main():
                                                                   transforms.ToTensor(), 
                                                                   transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),]))
         loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+
+    elif dset == 'DTD-Large':
+        print('######################################')
+        print('Testing on DTD Texture')
+        data = torchvision.datasets.ImageFolder(root="data/dtd/images/",
+                                    transform=transforms.Compose([transforms.Resize(256), transforms.CenterCrop((224, 224)), 
+                                                                  transforms.ToTensor(), 
+                                                                  transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),]))
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=64, num_workers=16)
      
     elif dset == 'LSUN-C':
         print('######################################')
@@ -372,12 +387,12 @@ def main():
         print('Testing on Places365')
         mean = [x / 255 for x in [125.3, 123.0, 113.9]]
         std = [x / 255 for x in [63.0, 62.1, 66.7]]
-        data = datasets.Places365(root="data/", split='val', small=True, download=True, 
+        data = datasets.Places365(root="data/", split='val', small=True, download=False, 
                                   transform=transforms.Compose([transforms.Resize((32, 32)), 
                                                                   transforms.CenterCrop(32), 
                                                                   transforms.ToTensor(),
                                                                   transforms.Normalize(mean, std)]))
-        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512, num_workers=16)
 
     elif dset == 'iNaturalist':
         print('######################################')
@@ -394,6 +409,17 @@ def main():
         print('######################################')
         print('Testing on Places365-Large')
         data = torchvision.datasets.ImageFolder(root="data/Places/",
+                                  transform=transforms.Compose([transforms.Resize((224, 224)), 
+                                                                  transforms.CenterCrop(224), 
+                                                                  transforms.ToTensor(),
+                                                                  transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                                                                       std=[0.229, 0.224, 0.225])]))
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=64, num_workers=16)
+
+    elif dset == 'SUN':
+        print('######################################')
+        print('Testing on SUN')
+        data = torchvision.datasets.ImageFolder(root="data/SUN/",
                                   transform=transforms.Compose([transforms.Resize((224, 224)), 
                                                                   transforms.CenterCrop(224), 
                                                                   transforms.ToTensor(),
