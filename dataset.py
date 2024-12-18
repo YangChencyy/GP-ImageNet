@@ -33,7 +33,7 @@ class ImageNetSubset(Dataset):
 def load_data(data_folder):
     all_data = []
     all_labels = []
-    for idx in range(1, 11):  # Assuming there are 10 batches for training
+    for idx in tqdm(range(1, 11)):  # Assuming there are 10 batches for training
         batch_file = os.path.join(data_folder, f'train_data_batch_{idx}')
         with open(batch_file, 'rb') as f:
             batch = pickle.load(f, encoding='bytes')
@@ -305,6 +305,23 @@ def imagenet10_set_loader(bsz, small=True):
     test_data = ImageSubfolder(root_dir + 'val', transform=test_transform, class_to_idx=class_to_idx)
     return train_data, test_data
 
+def imagenet10_32():
+    data, labels = load_data('data/ImageNet32_train')
+    selected_data, selected_labels, class_mapping = select_and_remap_classes(data, labels, num_classes = 10)
+    selected_data = torch.tensor(selected_data, dtype=torch.float) / 255.0
+    selected_labels = torch.tensor(selected_labels, dtype=torch.long)
+    train_set = ImageNetSubset(selected_data, selected_labels)
+    total_size = len(train_set)
+    train_ratio = 0.8
+    val_ratio = 0.2
+
+    # Calculate sizes for each split
+    train_size = int(total_size * train_ratio)
+    val_size = int(total_size * val_ratio) + 1
+    print(train_size, val_size)
+    train_set, test_set = torch.utils.data.random_split(train_set, [train_size, val_size])
+    return train_set, test_set
+
 # DEPRECATED!
 def create_imagenet_subset():
     src_dir = os.path.join('data')
@@ -321,4 +338,5 @@ def create_imagenet_subset():
 if __name__ == '__main__':
     pass
     # create_imagenet_subset()
-    imagenet10_set_loader(512)
+    # imagenet10_set_loader(512)
+    

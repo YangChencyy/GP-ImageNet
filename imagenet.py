@@ -54,6 +54,8 @@ def main():
     else:
         print("Training on ImageNet10 Dataset")
         train_set, test_set = imagenet10_set_loader(bsz)
+        # train_set, test_set = imagenet10_32()
+        
 
 
     total_size = len(train_set)
@@ -71,8 +73,8 @@ def main():
     train_dataset, validation_dataset = random_split(train_set, [train_size, val_size])
     print("Dataset size: ", len(train_dataset), len(validation_dataset), len(test_set))
 
-    train_loader = DataLoader(train_dataset, batch_size=bsz, shuffle=True, num_workers=16)
-    validation_loader = DataLoader(validation_dataset, batch_size=bsz, shuffle=False, num_workers=16)
+    train_loader = DataLoader(train_dataset, batch_size=bsz, shuffle=True, num_workers=32)
+    validation_loader = DataLoader(validation_dataset, batch_size=bsz, shuffle=False, num_workers=32)
 
     if num_classes == 100:
         # Model: Resnet101
@@ -86,6 +88,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     lr=args.lr
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001, nesterov=True)
+
 
     # Checkpointing
     ckpt_dir = os.path.join('ckpt', f'imagenet{num_classes}-{n_features}-{args.tag}')
@@ -104,6 +107,8 @@ def main():
             # for inputs, labels in train_loader:
             for inputs, labels in tqdm(train_loader, disable=(not args.verbose)): # add tqdm for runtime diagnosis
                 inputs, labels = inputs.to(device), labels.to(device)
+                # if num_classes == 10:
+                #     inputs = inputs.view(-1, 3, 32, 32)
                 # print(inputs.shape)
                 optimizer.zero_grad()
                 features, logits = model(inputs)
@@ -117,7 +122,8 @@ def main():
             with torch.no_grad():
                 for inputs, labels in validation_loader:
                     inputs, labels = inputs.to(device), labels.to(device)
-                    # inputs = inputs.view(-1, 3, 32, 32)
+                    # if num_classes == 10:
+                    #     inputs = inputs.view(-1, 3, 32, 32)
                     features, logits = model(inputs)
                     loss = criterion(logits, labels)
                     validation_loss += loss.item()
@@ -172,7 +178,8 @@ def main():
         with torch.no_grad():
             for inputs, labels in tqdm(train_loader):
                 inputs, labels = inputs.to(device), labels.to(device)
-                # inputs = inputs.view(-1, 3, 32, 32)
+                # if num_classes == 10:
+                #     inputs = inputs.view(-1, 3, 32, 32)
                 features, logits = model(inputs)
 
                 train_features.append(features.cpu().numpy())  # Store features
@@ -220,6 +227,8 @@ def main():
 
     ##################################  Test   ############################################################
 
+    test_set = validation_dataset + test_set
+    print(len(test_set))
     test_loader = DataLoader(test_set, batch_size=bsz, shuffle=False, num_workers=16)
     # Assuming the continuation from the previous script
     print('######################################')
@@ -235,7 +244,8 @@ def main():
     with torch.no_grad():
         for inputs, labels in tqdm(test_loader):
             inputs, labels = inputs.to(device), labels.to(device)
-            # inputs = inputs.view(-1, 3, 32, 32)
+            # if num_classes == 10:
+            #     inputs = inputs.view(-1, 3, 32, 32)
             features, logits = model(inputs)
 
             test_features.append(features.cpu().numpy())  # Store features
@@ -335,7 +345,7 @@ def main():
                                     transform=transforms.Compose([transforms.Resize((32, 32)), transforms.CenterCrop(32), 
                                                                   transforms.ToTensor(), 
                                                                   transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),]))
-        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512)
+        loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=512, num_workers=4)
 
     elif dset == 'DTD-Large':
         print('######################################')
@@ -451,12 +461,12 @@ def main():
 
     
     # Concatenate all features, logits (softmax scores), and labels
-    n_test = min(5000, len(test_set))
+    n_test_ood = 5000
     ood_features_array = np.concatenate(ood_features, axis=0)
     print(ood_features_array.shape)
-    ood_features_array = ood_features_array[:n_test, :]
-    ood_logits_array = np.concatenate(ood_logits, axis=0)[:n_test, :]
-    ood_labels_array = np.full((n_test, 1), 10)
+    ood_features_array = ood_features_array[:n_test_ood, :]
+    ood_logits_array = np.concatenate(ood_logits, axis=0)[:n_test_ood, :]
+    ood_labels_array = np.full((n_test_ood, 1), 10)
 
     combined_features = np.concatenate([test_features_array, ood_features_array], axis=0)
     combined_logits = np.concatenate([test_logits_array, ood_logits_array], axis=0)
@@ -482,9 +492,10 @@ def main():
     print(f'Saving data for {dset} to CSV:')
 
     column_names = [f"feature_{i+1}" for i in range(n_features)] + [f"logit_{i+1}" for i in range(num_classes)] + ["label", "tSNE1", "tSNE2", "class"]
-    class_labels = ['test'] * n_test + ['OOD'] * n_test  # Adjust the numbers as needed
+    class_labels = ['test'] * n_test + ['OOD'] * n_test_ood  # Adjust the numbers as needed
 
     combined_data_with_tsne = np.hstack((combined_array, tsne_results, np.array(class_labels).reshape(-1, 1)))
+    
 
     with open(os.path.join(ckpt_dir, f"{dset}_test.csv"), "w") as file:
         file.write(",".join(column_names) + "\n")
