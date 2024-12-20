@@ -278,7 +278,7 @@ def imagenet100_set_loader(bsz):
     
     # return labeled_trainloader, testloader
 
-def imagenet10_set_loader(bsz, small=True):
+def imagenet10_set_loader(bsz, dset_id, small=True):
     n = 32 if small else 224
     train_transform = transforms.Compose([
         transforms.Resize(size=(n, n), interpolation=transforms.InterpolationMode.BICUBIC),
@@ -296,7 +296,20 @@ def imagenet10_set_loader(bsz, small=True):
     root_dir = 'data/'
     train_dir = root_dir + 'val'
     classes, _ = torchvision.datasets.folder.find_classes(train_dir)
-    index = [895, 817, 10, 284, 352, 238, 30, 569, 339, 510]
+
+    # # Choose class
+    indices = [[895, 817, 10, 284, 352, 238, 30, 569, 339, 510],
+               [648, 506, 608, 640, 539, 548, 446, 183, 809, 127],
+               [961, 316, 227, 74, 322, 480, 933, 508, 158, 367],
+               [247, 202, 622, 351, 367, 523, 796, 91, 39, 54],
+               [114, 183, 841, 870, 730, 756, 554, 799, 97, 150],
+               [795, 854, 631, 581, 669, 573, 310, 900, 569, 598],
+               [310, 404, 382, 136, 786, 97, 858, 970, 391, 688],
+               [744, 437, 606, 909, 96, 951, 384, 43, 461, 247],
+               [534, 358, 139, 955, 304, 879, 998, 319, 359, 904],
+               [461, 29, 22, 254, 560, 232, 700, 45, 363, 321],
+               [8, 641, 417, 181, 813, 64, 396, 437, 7, 178]]
+    index = indices[dset_id]
 
     classes = [classes[i] for i in index]
     # print(classes)
@@ -335,8 +348,15 @@ def create_imagenet_subset():
         for c in tqdm(cls_list):
             shutil.copytree(os.path.join(src_dir, split, c), os.path.join(dst_path, split, c), dirs_exist_ok=True)
 
+def sample_class_with_seed(n=10, seed=2024):
+    np.random.seed(seed)
+    for _ in range(n):
+        print(list(np.random.choice(1000, 10)))
+        
+
 if __name__ == '__main__':
     pass
     # create_imagenet_subset()
     # imagenet10_set_loader(512)
+    sample_class_with_seed()
     

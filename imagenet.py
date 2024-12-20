@@ -23,11 +23,12 @@ from tqdm import tqdm
 import argparse
 
 
-torch.manual_seed(42)
-np.random.seed(42)
+torch.manual_seed(2024)
+np.random.seed(2024)
 
 def main():
     parser = argparse.ArgumentParser(description="details")
+    parser.add_argument('--dset_id', type=int, required=False, default=0, help='dset_id')
     parser.add_argument('--num_classes', type=int, required=False, default=100, help='Number of classes')
     parser.add_argument('--bsz', type=int, required=False, default=64, help='batch size')
     parser.add_argument('--n_features', type=int, required=False, default=128, help='Number of features')
@@ -36,7 +37,7 @@ def main():
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
     parser.add_argument('--train', action='store_true', help='train models')
     parser.add_argument('--eval_train', action='store_true', help='eval train sets')
-    parser.add_argument('--tag', type=str, required=False, default=None, help='tag')
+    parser.add_argument('--tag', type=str, required=False, default="o", help='tag')
     args = parser.parse_args()
 
     # Set device
@@ -53,7 +54,7 @@ def main():
         train_set, test_set = imagenet100_set_loader(bsz)
     else:
         print("Training on ImageNet10 Dataset")
-        train_set, test_set = imagenet10_set_loader(bsz)
+        train_set, test_set = imagenet10_set_loader(bsz, args.dset_id)
         # train_set, test_set = imagenet10_32()
         
 
@@ -66,8 +67,9 @@ def main():
     # Calculate sizes for each split
     train_size = int(total_size * train_ratio)
     val_size = int(total_size * val_ratio)
-    if num_classes == 100:
+    if train_size + val_size != total_size:
         val_size = val_size + 1 # This is specifically for imagenet100
+
 
     # Perform the split
     train_dataset, validation_dataset = random_split(train_set, [train_size, val_size])
@@ -91,7 +93,7 @@ def main():
 
 
     # Checkpointing
-    ckpt_dir = os.path.join('ckpt', f'imagenet{num_classes}-{n_features}-{args.tag}')
+    ckpt_dir = os.path.join('ckpt', f'imagenet{num_classes}-{n_features}-{args.dset_id}-{args.tag}')
     os.makedirs(ckpt_dir, exist_ok=True)
 
     TRAIN = args.train
