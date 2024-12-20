@@ -95,6 +95,7 @@ def main():
     # Checkpointing
     ckpt_dir = os.path.join('ckpt', f'imagenet{num_classes}-{n_features}-{args.dset_id}-{args.tag}')
     os.makedirs(ckpt_dir, exist_ok=True)
+    f = open(os.path.join(ckpt_dir, 'log.txt'), "w")
 
     TRAIN = args.train
     EVALUATE_TRAIN = args.eval_train
@@ -135,6 +136,7 @@ def main():
             # scheduler.step(validation_loss)
 
             print(f'Epoch {epoch+1}, Training Losss: {train_loss}, Validation Loss: {validation_loss}')
+            f.write(f'Epoch {epoch+1}, Training Losss: {train_loss}, Validation Loss: {validation_loss}\n')
 
             # Update learning rate
             if epoch == 49:
@@ -203,6 +205,7 @@ def main():
         total_samples = train_labels_array.shape[0]
         train_accuracy = correct_predictions / total_samples
         print(f'Train Accuracy: {train_accuracy:.4f}')
+        f.write(f'Train Accuracy: {train_accuracy:.4f}')
 
         n_train = 50000
         train_features_array = train_features_array[:n_train, :]
@@ -269,6 +272,7 @@ def main():
     total_samples = test_labels_array.shape[0]
     test_accuracy = correct_predictions / total_samples
     print(f'Test Accuracy: {test_accuracy:.4f}')
+    f.write(f'Test Accuracy: {test_accuracy:.4f}')
 
     n_test = min(5000, len(test_set))
     test_features_array = test_features_array[:n_test, :]

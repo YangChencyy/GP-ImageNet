@@ -14,10 +14,13 @@
 
 export ID=6
 export NF=128
+export LR=0.1
+export NCLS=10
+export BSZ=256
 
-python imagenet.py --lr=0.1 --num_classes=10 --bsz=256 --n_features=$NF --dset_id $ID --train --eval_train --ood DTD
-python imagenet.py --lr=0.1 --num_classes=10 --bsz=256 --n_features=$NF --dset_id $ID --ood SVHN
-python imagenet.py --lr=0.1 --num_classes=10 --bsz=256 --n_features=$NF --dset_id $ID --ood LSUN-R
-python imagenet.py --lr=0.1 --num_classes=10 --bsz=256 --n_features=$NF --dset_id $ID --ood LSUN-C
-python imagenet.py --lr=0.1 --num_classes=10 --bsz=256 --n_features=$NF --dset_id $ID --ood Places365
-python imagenet.py --lr=0.1 --num_classes=10 --bsz=256 --n_features=$NF --dset_id $ID --ood iSUN
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --train --eval_train --ood DTD
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood SVHN
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood LSUN-R
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood LSUN-C
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood Places365
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood iSUN
