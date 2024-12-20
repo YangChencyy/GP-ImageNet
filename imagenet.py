@@ -48,13 +48,13 @@ def main():
 #############################s#####  Train   ###########################################################
     num_classes = args.num_classes
     bsz=args.bsz
-    n_features=args.n_features
+    n_features=int(args.n_features)
     if num_classes == 100:
         print("Training on ImageNet100 Dataset")
         train_set, test_set = imagenet100_set_loader(bsz)
     else:
         print("Training on ImageNet10 Dataset")
-        train_set, test_set = imagenet10_set_loader(bsz, args.dset_id)
+        train_set, test_set = imagenet10_set_loader(bsz, int(args.dset_id))
         # train_set, test_set = imagenet10_32()
         
 

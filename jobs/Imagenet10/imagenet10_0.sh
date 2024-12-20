@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --account=jhjin1
-#SBATCH --job-name=IM10-4
+#SBATCH --account=sunwbgt0
+#SBATCH --job-name=IM10-0
 #SBATCH --mail-user=xysong@umich.edu
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --nodes=1
@@ -10,9 +10,9 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
 #SBATCH --time=4:00:00
-#SBATCH --output=/scratch/sunwbgt_root/sunwbgt98/xysong/GP-ImageNet/jobs/Imagenet10/im10-4.log
+#SBATCH --output=/scratch/sunwbgt_root/sunwbgt98/xysong/GP-ImageNet/jobs/Imagenet10/im10-0.log
 
-export ID=4
+export ID=0
 export NF=128
 
 python imagenet.py --lr=0.1 --num_classes=10 --bsz=256 --n_features=$NF --dset_id $ID --train --eval_train --ood DTD
