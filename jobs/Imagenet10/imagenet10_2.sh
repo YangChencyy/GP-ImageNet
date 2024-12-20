@@ -13,14 +13,15 @@
 #SBATCH --output=/scratch/sunwbgt_root/sunwbgt98/xysong/GP-ImageNet/jobs/Imagenet10/im10-2.log
 
 export ID=2
-export NF=128
-export LR=0.1
+export NF=32
+export LR=0.5
 export NCLS=10
 export BSZ=256
+export TAG="o1"
 
-python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --train --eval_train --ood DTD
-python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood SVHN
-python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood LSUN-R
-python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood LSUN-C
-python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood Places365
-python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood iSUN
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --train --eval_train --ood DTD --tag $TAG
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood SVHN --tag $TAG
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood LSUN-R --tag $TAG
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood LSUN-C --tag $TAG
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood Places365 --tag $TAG
+python imagenet.py --lr=$LR --num_classes=$NCLS --bsz=$BSZ --n_features=$NF --dset_id $ID --ood iSUN --tag $TAG
