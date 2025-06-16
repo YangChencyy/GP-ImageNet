@@ -19,6 +19,7 @@ from models.densenet import *
 from dataset import *
 import torchvision
 from tqdm import tqdm
+import argparse
 
 
 torch.manual_seed(42)
@@ -26,6 +27,12 @@ np.random.seed(42)
 
 def main():
     # Set device
+    parser = argparse.ArgumentParser(description="details")
+    parser.add_argument('--train', action='store_true', help='train models')
+    parser.add_argument('--eval_train', action='store_true', help='eval train sets')
+    parser.add_argument('--ood', type=str, required=False, default=None, help='OOD')
+    args = parser.parse_args()
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
 
@@ -64,16 +71,16 @@ def main():
     # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
 
-    lr=0.5
+    lr=0.1
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001, nesterov=True)
 
     ckpt_dir = os.path.join('ckpt', f'cifar100-{n_features}')
     os.makedirs(ckpt_dir, exist_ok=True)
 
-    TRAIN = False
-    EVALUATE_TRAIN = False
+    TRAIN = args.train
+    EVALUATE_TRAIN = args.eval_train
     if TRAIN:
-        num_epochs = 200  # Define the number of epochs
+        num_epochs = 300  # Define the number of epochs
         # Train the model
         print('######################################')
         print('Start training:')
@@ -109,11 +116,11 @@ def main():
             print(f'Epoch {epoch+1}, Training Losss: {train_loss}, Validation Loss: {validation_loss}')
 
             # Update learning rate
-            if epoch == 49:
+            if epoch == 150:
                 optimizer.param_groups[0]['lr'] *= lr * 0.1
             # elif epoch == 74:
             #     optimizer.param_groups[0]['lr'] *= lr * 0.01
-            elif epoch == 89:
+            elif epoch == 225:
                 optimizer.param_groups[0]['lr'] *= lr * 0.01
 
         # Save the trained model
@@ -261,7 +268,8 @@ def main():
     # dset = 'LSUN-C'
     # dset = 'LSUN-R'
     # dset = 'iSUN'
-    dset = 'Places365'
+    # dset = 'Places365'
+    dset = args.ood
     # dset = 'SVHN'
     # dset='CIFAR10'
     # dset = 'FashionMNIST'
